@@ -5,7 +5,8 @@
 Gigs keeps your Mac's free disk space in the menu bar, so you notice it's running low before macOS tells you.
 
 - The number is the gigabytes available on your startup disk. The ring around it fills with the share of the disk that's still free.
-- The icon turns red when less than 20 GB are left.
+- The icon turns red when less than 20 GB are left, and Gigs offers to clean up.
+- Clean Up… deletes caches and logs with the cleanup script from [Mole](https://github.com/tw93/mole), bundled in `Mole/`.
 - Click it to see available and total space, for example "186 GB available of 494 GB".
 - It updates every minute. Press ⌘R in the menu to refresh right away.
 - The number matches Finder: space macOS can purge on its own counts as free.
@@ -29,4 +30,4 @@ swift run
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+GPL-3.0. See [LICENSE](LICENSE). Includes code from [Mole](https://github.com/tw93/mole), also GPL-3.0.

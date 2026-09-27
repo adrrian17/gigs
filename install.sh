@@ -37,6 +37,7 @@ sips -z 512 512 Assets/icon.png --out "$iconset/icon_256x256@2x.png" >/dev/null
 sips -z 512 512 Assets/icon.png --out "$iconset/icon_512x512.png" >/dev/null
 sips -z 1024 1024 Assets/icon.png --out "$iconset/icon_512x512@2x.png" >/dev/null
 mkdir -p "$app/Contents/Resources"
+cp -R Mole "$app/Contents/Resources/Mole"
 iconutil -c icns "$iconset" -o "$app/Contents/Resources/AppIcon.icns"
 rm -rf "$(dirname "$iconset")"
 codesign --force --sign - "$app"
