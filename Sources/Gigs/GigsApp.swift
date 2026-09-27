@@ -1,3 +1,4 @@
+import ServiceManagement
 import SwiftUI
 
 @main
@@ -6,6 +7,9 @@ struct GigsApp: App {
 
     var body: some Scene {
         MenuBarExtra {
+            if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
+                Text("Gigs \(version)")
+            }
             Text("\(disk.available) available of \(disk.total)")
             Button("Refresh") { disk.refresh() }.keyboardShortcut("r")
             Button(disk.cleaning ? "Cleaning… \(Int(disk.progress * 100))%" : "Clean Up…") { disk.offerCleanup() }
@@ -66,6 +70,10 @@ final class Disk {
     ].compactMap { $0?.path }.first { FileManager.default.fileExists(atPath: $0) }
 
     init() {
+        // Open at login. Skipped under `swift run`, and once registered so turning it off in System Settings sticks.
+        if Bundle.main.bundlePath.hasSuffix(".app"), SMAppService.mainApp.status == .notRegistered {
+            try? SMAppService.mainApp.register()
+        }
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
             Task { @MainActor in self.refresh() }

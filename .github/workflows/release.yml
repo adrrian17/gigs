@@ -1,0 +1,27 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history and tags for the notes
+      - run: ./package.sh
+        env:
+          VERSION: ${{ github.ref_name }}
+      - name: Create release
+        # Notes are the commit subjects since the previous tag (or all commits on the first release).
+        run: |
+          prev=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          git log --format='- %s (%h)' ${prev:+"$prev.."}"$GITHUB_REF_NAME" > notes.md
+          gh release create "$GITHUB_REF_NAME" .build/Gigs.dmg --notes-file notes.md
+        env:
+          GH_TOKEN: ${{ github.token }}

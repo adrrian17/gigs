@@ -20,7 +20,19 @@ Requires macOS 14 and Swift 6.
 ./install.sh
 ```
 
-Builds in release mode, replaces `/Applications/Gigs.app`, signs it locally, registers it to open at login, and launches it.
+Builds the app, replaces `/Applications/Gigs.app`, and launches it. Gigs adds itself to Login Items on first launch.
+
+## Distribute
+
+```sh
+./package.sh
+```
+
+Builds a universal (Apple Silicon and Intel) `.build/Gigs.dmg`. Open it and drag Gigs to Applications.
+
+Pushing a `v*` tag (`git tag v1.0.0 && git push origin v1.0.0`) builds the DMG on GitHub Actions and attaches it to a new release.
+
+The app is signed ad hoc, not with a Developer ID, so macOS blocks the first launch on other Macs. Open System Settings › Privacy & Security and click Open Anyway.
 
 ## Run without installing
 
