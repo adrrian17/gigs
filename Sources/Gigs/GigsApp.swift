@@ -16,7 +16,7 @@ struct GigsApp: App {
                 .disabled(disk.cleaning)
             if disk.docker != nil {
                 Divider()
-                Button("Clean Up Docker") { disk.pruneDocker() }.disabled(disk.cleaning)
+                Button("Clean Up Docker…") { disk.pruneDocker() }.disabled(disk.cleaning)
             }
             Divider()
             Button("Quit Gigs") { NSApplication.shared.terminate(nil) }.keyboardShortcut("q")
@@ -142,9 +142,17 @@ final class Disk {
         do { try process.run() } catch { cleaning = false }
     }
 
-    // Runs without asking: removes stopped containers, unused networks, all unused images, and build cache (not volumes).
+    // Removes stopped containers, unused networks, all unused images, and build cache (not volumes).
     func pruneDocker() {
         guard let docker else { return }
+        NSApp.activate()
+        let alert = NSAlert()
+        alert.messageText = "Clean up Docker?"
+        alert.informativeText = "This will delete stopped containers, unused networks, all images not used by a container, and the build cache. Volumes are kept."
+        alert.addButton(withTitle: "Clean Up")
+        alert.addButton(withTitle: "Cancel")
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
         cleaning = true
         progress = 0
         let process = Process()
