@@ -72,9 +72,8 @@ final class Disk {
         Bundle.main.resourceURL?.appending(path: "Mole/bin/clean.sh"),
         URL(filePath: #filePath).appending(path: "../../../Mole/bin/clean.sh").standardized,
     ].compactMap { $0?.path }.first { FileManager.default.fileExists(atPath: $0) }
-    // Docker Desktop and OrbStack both link the CLI into one of these.
-    let docker = ["/usr/local/bin/docker", "/opt/homebrew/bin/docker", NSHomeDirectory() + "/.orbstack/bin/docker"]
-        .first { FileManager.default.isExecutableFile(atPath: $0) }
+    // Docker Desktop and OrbStack both link the CLI into one of these; re-checked on every refresh so installs show up.
+    private(set) var docker: String?
 
     init() {
         // Open at login. Skipped under `swift run`, and once registered so turning it off in System Settings sticks.
@@ -88,6 +87,8 @@ final class Disk {
     }
 
     func refresh() {
+        docker = ["/usr/local/bin/docker", "/opt/homebrew/bin/docker", NSHomeDirectory() + "/.orbstack/bin/docker"]
+            .first { FileManager.default.isExecutableFile(atPath: $0) }
         let keys: Set<URLResourceKey> = [.volumeAvailableCapacityForImportantUsageKey, .volumeTotalCapacityKey]
         guard let values = try? URL(fileURLWithPath: "/").resourceValues(forKeys: keys) else { return }
         // "Important usage" matches Finder's number (counts purgeable space as available).
