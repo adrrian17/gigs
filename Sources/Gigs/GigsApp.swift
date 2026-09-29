@@ -14,6 +14,10 @@ struct GigsApp: App {
             Button("Refresh") { disk.refresh() }.keyboardShortcut("r")
             Button(disk.cleaning ? "Cleaning… \(Int(disk.progress * 100))%" : "Clean Up…") { disk.offerCleanup() }
                 .disabled(disk.cleaning)
+            if disk.docker != nil {
+                Divider()
+                Button("Clean Up Docker") { disk.pruneDocker() }.disabled(disk.cleaning)
+            }
             Divider()
             Button("Quit Gigs") { NSApplication.shared.terminate(nil) }.keyboardShortcut("q")
         } label: {
@@ -68,6 +72,9 @@ final class Disk {
         Bundle.main.resourceURL?.appending(path: "Mole/bin/clean.sh"),
         URL(filePath: #filePath).appending(path: "../../../Mole/bin/clean.sh").standardized,
     ].compactMap { $0?.path }.first { FileManager.default.fileExists(atPath: $0) }
+    // Docker Desktop and OrbStack both link the CLI into one of these.
+    let docker = ["/usr/local/bin/docker", "/opt/homebrew/bin/docker", NSHomeDirectory() + "/.orbstack/bin/docker"]
+        .first { FileManager.default.isExecutableFile(atPath: $0) }
 
     init() {
         // Open at login. Skipped under `swift run`, and once registered so turning it off in System Settings sticks.
@@ -133,6 +140,37 @@ final class Disk {
             Task { @MainActor in self.finishCleanup(before: before) }
         }
         do { try process.run() } catch { cleaning = false }
+    }
+
+    // Runs without asking: removes stopped containers, unused networks, all unused images, and build cache (not volumes).
+    func pruneDocker() {
+        guard let docker else { return }
+        cleaning = true
+        progress = 0
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: docker)
+        process.arguments = ["system", "prune", "--all", "--force"]
+        process.standardInput = FileHandle.nullDevice
+        let output = Pipe()
+        process.standardOutput = output
+        process.standardError = output
+        do { try process.run() } catch { cleaning = false; return }
+        // Read on a background queue until EOF so a long list of deleted images can't fill the pipe and stall docker.
+        DispatchQueue.global().async {
+            // Freed space lands inside Docker's VM disk, so report Docker's own total ("Total reclaimed space: …") or its error.
+            let text = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            process.waitUntilExit()
+            let summary = text.split(separator: "\n").last.map(String.init) ?? "Docker exited without output."
+            Task { @MainActor in
+                self.cleaning = false
+                self.refresh()
+                NSApp.activate()
+                let alert = NSAlert()
+                alert.messageText = "Docker cleanup finished"
+                alert.informativeText = summary
+                alert.runModal()
+            }
+        }
     }
 
     private func finishCleanup(before: Int64) {
